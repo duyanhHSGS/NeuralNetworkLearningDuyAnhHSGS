@@ -183,11 +183,27 @@ struct NeuralNetwork {
 
 // === MAIN ===
 int main() {
-	auto act = leaky_relu;
-	auto dact = d_leaky_relu;
+	// Activation functions
+	auto leaky_relu_pair = std::make_pair(leaky_relu, d_leaky_relu);
+	auto tanh_pair = std::make_pair(
+	[](double x) {
+		return std::tanh(x);
+	},
+	[](double x) {
+		double t = std::tanh(x);
+		return 1 - t * t;
+	}
+	                 );
+	auto relu_pair = std::make_pair(
+	[](double x) {
+		return x > 0 ? x : 0.0;
+	},
+	[](double x) {
+		return x > 0 ? 1.0 : 0.0;
+	}
+	                 );
 
-	NeuralNetwork brain({4}, 2, 1, act, dact);
-
+	// XOR dataset
 	std::vector<std::vector<double>> training_inputs = {
 		{0, 0}, {0, 1}, {1, 0}, {1, 1}
 	};
@@ -195,22 +211,81 @@ int main() {
 		{0}, {1}, {1}, {0}
 	};
 
-	double learning_rate = 0.1;
-	int epochs = 1000;
-
-	for (int epoch = 0; epoch < epochs; ++epoch) {
-		for (size_t i = 0; i < training_inputs.size(); ++i)
-			brain.train(training_inputs[i], training_outputs[i], learning_rate);
+	// === Leaky ReLU: 2 neurons, 0.3 learning rate, 10000 epochs ===
+	NeuralNetwork leaky_brain({2}, 2, 1, leaky_relu_pair.first, leaky_relu_pair.second);
+	for (int epoch = 0; epoch < 10000; ++epoch) {
+		for (int i = 0; i < 4; ++i) {
+			leaky_brain.train(training_inputs[i], training_outputs[i], 0.3);
+		}
+	}
+	std::cout << "\n=== Leaky ReLU (2N, 0.3LR, 10000 epochs) ===\n";
+	for (int i = 0; i < 4; ++i) {
+		std::vector<std::vector<double>> zs, acts;
+		auto out = leaky_brain.feed_forward(training_inputs[i], zs, acts);
+		std::cout << "Input: " << training_inputs[i][0] << ", " << training_inputs[i][1]
+		          << " -> Output: " << out[0] << "\n";
 	}
 
-	std::cout << "Trained Network Outputs for XOR:\n";
-	for (size_t i = 0; i < training_inputs.size(); ++i) {
-		std::vector<std::vector<double>> dummy_zs, dummy_activations;
-		std::vector<double> prediction = brain.feed_forward(training_inputs[i], dummy_zs, dummy_activations);
-		std::cout << "Input: " << training_inputs[i][0] << ", "
-		          << training_inputs[i][1]
-		          << " ? Output: " << prediction[0] << "\n";
+	// === Tanh: 4 neurons, 0.1 learning rate, 1000 epochs ===
+	NeuralNetwork tanh_brain({4}, 2, 1, tanh_pair.first, tanh_pair.second);
+	for (int epoch = 0; epoch < 1000; ++epoch) {
+		for (int i = 0; i < 4; ++i) {
+			tanh_brain.train(training_inputs[i], training_outputs[i], 0.1);
+		}
+	}
+	std::cout << "\n=== Tanh (4N, 0.1LR, 1000 epochs) ===\n";
+	for (int i = 0; i < 4; ++i) {
+		std::vector<std::vector<double>> zs, acts;
+		auto out = tanh_brain.feed_forward(training_inputs[i], zs, acts);
+		std::cout << "Input: " << training_inputs[i][0] << ", " << training_inputs[i][1]
+		          << " -> Output: " << out[0] << "\n";
+	}
+
+	// === Leaky ReLU: 100 neurons, 0.1 learning rate, 100 epochs ===
+	NeuralNetwork relu_brain({100}, 2, 1, leaky_relu_pair.first, leaky_relu_pair.second);
+	for (int epoch = 0; epoch < 100; ++epoch) {
+		for (int i = 0; i < 4; ++i) {
+			relu_brain.train(training_inputs[i], training_outputs[i], 0.1);
+		}
+	}
+	std::cout << "\n=== Leaky ReLU (100N, 0.01LR, 100 epochs) ===\n";
+	for (int i = 0; i < 4; ++i) {
+		std::vector<std::vector<double>> zs, acts;
+		auto out = relu_brain.feed_forward(training_inputs[i], zs, acts);
+		std::cout << "Input: " << training_inputs[i][0] << ", " << training_inputs[i][1]
+		          << " -> Output: " << out[0] << "\n";
+	}
+
+	// === Leaky ReLU: 50 neurons, 0.1 learning rate, 100 epochs ===
+	NeuralNetwork relu2_brain({50}, 2, 1, leaky_relu_pair.first, leaky_relu_pair.second);
+	for (int epoch = 0; epoch < 1000; ++epoch) {
+		for (int i = 0; i < 4; ++i) {
+			relu2_brain.train(training_inputs[i], training_outputs[i], 0.1);
+		}
+	}
+	std::cout << "\n=== Leaky ReLU (50N, 0.1LR, 1000 epochs) ===\n";
+	for (int i = 0; i < 4; ++i) {
+		std::vector<std::vector<double>> zs, acts;
+		auto out = relu2_brain.feed_forward(training_inputs[i], zs, acts);
+		std::cout << "Input: " << training_inputs[i][0] << ", " << training_inputs[i][1]
+		          << " -> Output: " << out[0] << "\n";
+	}
+
+	// === Leaky ReLU: 50 neurons, 0.1 learning rate, 100 epochs ===
+	NeuralNetwork relu3_brain({10}, 2, 1, leaky_relu_pair.first, leaky_relu_pair.second);
+	for (int epoch = 0; epoch < 1000; ++epoch) {
+		for (int i = 0; i < 4; ++i) {
+			relu3_brain.train(training_inputs[i], training_outputs[i], 0.1);
+		}
+	}
+	std::cout << "\n=== Leaky ReLU (10N, 0.1LR, 1000 epochs) ===\n";
+	for (int i = 0; i < 4; ++i) {
+		std::vector<std::vector<double>> zs, acts;
+		auto out = relu3_brain.feed_forward(training_inputs[i], zs, acts);
+		std::cout << "Input: " << training_inputs[i][0] << ", " << training_inputs[i][1]
+		          << " -> Output: " << out[0] << "\n";
 	}
 
 	return 0;
 }
+
